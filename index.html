@@ -8,13 +8,11 @@
       margin: 0;
       background-color: #c7d4e2;
       font-family: 'SF Mono', 'Courier New', monospace;
-      display: flex;
-      justify-content: flex-start;
-      align-items: flex-start;
       height: 100vh;
       overflow: hidden;
     }
 
+    /* Terminal */
     .terminal-window {
       position: absolute;
       top: 60px;
@@ -110,67 +108,93 @@
       border-radius: 0 0 10px 10px;
     }
 
-    .command-list {
-      margin-top: 60px;
-      margin-left: 700px;
-      background: #fff;
-      border-radius: 8px;
-      padding: 16px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      width: 250px;
-      font-family: sans-serif;
-    }
-
-    .command-list h3 {
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
-
-    .command-list button {
-      display: block;
-      margin-bottom: 10px;
+    /* Sidebar Button */
+    .see-guide {
+      position: absolute;
+      top: 60px;
+      right: 60px;
       background: #1e1e1e;
       color: #33ff33;
       border: none;
-      padding: 8px 12px;
-      cursor: pointer;
-      width: 100%;
-      text-align: left;
-      border-radius: 5px;
+      padding: 12px 20px;
       font-family: 'Courier New', monospace;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      z-index: 11;
     }
 
-    .command-list button:hover {
+    .see-guide:hover {
       background: #333;
     }
 
-    .tutorial-popup {
-      position: fixed;
-      top: 30%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      border: 2px solid #000;
-      padding: 20px;
-      width: 400px;
+    /* Guide Popup */
+    .guide-popup {
+      position: absolute;
+      top: 120px;
+      left: 120px;
+      width: 500px;
+      background: #f5f5f7;
+      border: 1px solid #999;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      z-index: 20;
       display: none;
-      z-index: 100;
+      flex-direction: column;
+      resize: both;
+      overflow: hidden;
     }
 
-    .tutorial-popup pre {
+    .guide-title {
+      background-color: #f5f5f7;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      border-bottom: 1px solid #ccc;
+      cursor: move;
+      user-select: none;
+    }
+
+    .guide-content {
+      padding: 16px;
+      background-color: #fff;
+      height: 300px;
+      overflow-y: auto;
+      font-size: 14px;
+      color: #000;
+    }
+
+    .guide-content code {
       background: #eee;
-      padding: 10px;
-      overflow-x: auto;
+      display: block;
+      padding: 8px;
+      margin-bottom: 8px;
     }
 
-    .tutorial-popup button {
-      margin-top: 10px;
+    .copy-btn {
+      background: #1e1e1e;
+      color: #33ff33;
+      border: none;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 12px;
+      cursor: pointer;
       float: right;
+      margin-top: 5px;
+      border-radius: 4px;
+    }
+
+    .copy-btn:hover {
+      background: #333;
     }
   </style>
 </head>
 <body>
 
+<!-- Terminal -->
 <div class="terminal-window" id="terminal">
   <div class="title-bar" id="drag-bar">
     <div class="window-buttons">
@@ -191,16 +215,35 @@
   <div class="footer-bar">Simulated Hardhat Node</div>
 </div>
 
-<div class="command-list">
-  <h3>Command List</h3>
-  <button onclick="showTutorial('npx hardhat node')">npx hardhat node</button>
-  <button onclick="showTutorial('npx hardhat compile')">npx hardhat compile</button>
-  <button onclick="showTutorial('npx hardhat run scripts/deploy.js')">deploy.js</button>
-</div>
+<!-- See Guide Button -->
+<button class="see-guide" onclick="openGuide()">📘 See Guide</button>
 
-<div class="tutorial-popup" id="tutorial-popup">
-  <div id="tutorial-content"></div>
-  <button onclick="document.getElementById('tutorial-popup').style.display='none'">Close</button>
+<!-- Guide Popup -->
+<div class="guide-popup" id="guide">
+  <div class="guide-title" id="guide-drag">
+    <span><strong>EthOS Node Setup Guide</strong></span>
+    <button onclick="closeGuide()">✖</button>
+  </div>
+  <div class="guide-content">
+    <p>🔧 <strong>Step-by-step:</strong></p>
+    <ol>
+      <li>Install dependencies:</li>
+      <code id="code1">npm install --save-dev hardhat</code>
+      <button class="copy-btn" onclick="copy('code1')">Copy</button>
+
+      <li>Start a local Hardhat node:</li>
+      <code id="code2">npx hardhat node</code>
+      <button class="copy-btn" onclick="copy('code2')">Copy</button>
+
+      <li>Compile contracts:</li>
+      <code id="code3">npx hardhat compile</code>
+      <button class="copy-btn" onclick="copy('code3')">Copy</button>
+
+      <li>Deploy contract to local node:</li>
+      <code id="code4">npx hardhat run scripts/deploy.js --network localhost</code>
+      <button class="copy-btn" onclick="copy('code4')">Copy</button>
+    </ol>
+  </div>
 </div>
 
 <script>
@@ -209,57 +252,9 @@
   const input = document.getElementById("terminal-input");
   const output = document.getElementById("terminal-output");
 
-  // Simulated command output
-  const commandOutputs = {
-    "npx hardhat node": `
-Compiling...
-Hardhat Node started on http://127.0.0.1:8545
-
-Accounts:
-0x1a2b3c...  10000 ETH
-0x4d5e6f...  10000 ETH
-
-Listening for JSON-RPC requests...
-    `,
-    "npx hardhat compile": `
-Compiling 10 files...
-Compiled successfully in 2.45s
-Artifacts saved to ./artifacts
-    `,
-    "npx hardhat run scripts/deploy.js": `
-Running deploy script...
-Deployed contract at: 0xAbCdEf1234567890
-Gas used: 1,234,567
-Script completed.
-    `,
-    "clear": ""
-  };
-
-  input.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      const command = input.value.trim();
-      const cmdLine = document.createElement("div");
-      cmdLine.textContent = "> " + command;
-      output.insertBefore(cmdLine, input.parentNode);
-
-      const result = document.createElement("div");
-      result.textContent = "Executing...";
-      output.insertBefore(result, input.parentNode);
-
-      setTimeout(() => {
-        result.textContent = commandOutputs[command] || `Command not found: ${command}`;
-        output.scrollTop = output.scrollHeight;
-      }, 700);
-
-      input.value = "";
-    }
-  });
-
-  // Drag
+  // Drag Terminal
   let isDragging = false, offsetX, offsetY;
-
   dragBar.addEventListener("mousedown", (e) => {
-    if (e.target.classList.contains("window-button")) return;
     isDragging = true;
     offsetX = e.clientX - terminal.offsetLeft;
     offsetY = e.clientY - terminal.offsetTop;
@@ -272,37 +267,67 @@ Script completed.
       terminal.style.top = `${e.clientY - offsetY}px`;
     }
   });
-
   document.addEventListener("mouseup", () => {
     isDragging = false;
     document.body.style.userSelect = "auto";
   });
 
-  // Tutorial Popup
-  function showTutorial(command) {
-    const popup = document.getElementById("tutorial-popup");
-    const content = document.getElementById("tutorial-content");
+  // Terminal Command
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      const command = input.value.trim();
+      const cmdLine = document.createElement("div");
+      cmdLine.textContent = "> " + command;
+      output.insertBefore(cmdLine, input.parentNode);
 
-    const tutorials = {
-      "npx hardhat node": `
-<h3>Start Local Node</h3>
-<pre>npx hardhat node</pre>
-<p>This command starts a local Ethereum node for development and testing.</p>
-      `,
-      "npx hardhat compile": `
-<h3>Compile Contracts</h3>
-<pre>npx hardhat compile</pre>
-<p>This command compiles all Solidity contracts and saves artifacts.</p>
-      `,
-      "npx hardhat run scripts/deploy.js": `
-<h3>Deploy Script</h3>
-<pre>npx hardhat run scripts/deploy.js</pre>
-<p>Executes a deployment script to deploy your contract to the local node.</p>
-      `
-    };
+      const result = document.createElement("div");
+      result.textContent = "Executing...";
+      output.insertBefore(result, input.parentNode);
 
-    content.innerHTML = tutorials[command] || `<p>No tutorial found for this command.</p>`;
-    popup.style.display = "block";
+      setTimeout(() => {
+        result.textContent = `Finished: ${command}`;
+        output.scrollTop = output.scrollHeight;
+      }, 1000);
+
+      input.value = "";
+    }
+  });
+
+  // Guide Popup
+  const guide = document.getElementById("guide");
+  function openGuide() {
+    guide.style.display = "flex";
+  }
+  function closeGuide() {
+    guide.style.display = "none";
+  }
+
+  // Drag Guide
+  const guideDrag = document.getElementById("guide-drag");
+  let draggingGuide = false, guideOffsetX, guideOffsetY;
+  guideDrag.addEventListener("mousedown", (e) => {
+    draggingGuide = true;
+    guideOffsetX = e.clientX - guide.offsetLeft;
+    guideOffsetY = e.clientY - guide.offsetTop;
+    document.body.style.userSelect = "none";
+  });
+  document.addEventListener("mousemove", (e) => {
+    if (draggingGuide) {
+      guide.style.left = `${e.clientX - guideOffsetX}px`;
+      guide.style.top = `${e.clientY - guideOffsetY}px`;
+    }
+  });
+  document.addEventListener("mouseup", () => {
+    draggingGuide = false;
+    document.body.style.userSelect = "auto";
+  });
+
+  // Copy Command
+  function copy(id) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Copied: ' + text);
+    });
   }
 </script>
 
