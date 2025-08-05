@@ -2,18 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>macOS Terminal Popup</title>
+  <title>EthOS Node Terminal</title>
   <style>
     body {
       margin: 0;
       background-color: #c7d4e2;
       font-family: 'SF Mono', 'Courier New', monospace;
+      display: flex;
+      justify-content: flex-start;
+      align-items: flex-start;
+      height: 100vh;
+      overflow: hidden;
     }
 
     .terminal-window {
       position: absolute;
-      top: 100px;
-      left: 100px;
+      top: 60px;
+      left: 60px;
       width: 600px;
       min-width: 300px;
       min-height: 200px;
@@ -25,6 +30,7 @@
       display: flex;
       flex-direction: column;
       resize: both;
+      z-index: 10;
     }
 
     .title-bar {
@@ -52,17 +58,9 @@
       border-radius: 50%;
     }
 
-    .close {
-      background-color: #ff5f57;
-    }
-
-    .minimize {
-      background-color: #ffbd2e;
-    }
-
-    .maximize {
-      background-color: #28c940;
-    }
+    .close { background-color: #ff5f57; }
+    .minimize { background-color: #ffbd2e; }
+    .maximize { background-color: #28c940; }
 
     .title-text {
       font-size: 12px;
@@ -103,13 +101,71 @@
     .footer-bar {
       background-color: #f5f5f7;
       border-top: 1px solid #ccc;
-      height: 32px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 12px;
       color: #555;
       border-radius: 0 0 10px 10px;
+    }
+
+    .command-list {
+      margin-top: 60px;
+      margin-left: 700px;
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      width: 250px;
+      font-family: sans-serif;
+    }
+
+    .command-list h3 {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .command-list button {
+      display: block;
+      margin-bottom: 10px;
+      background: #1e1e1e;
+      color: #33ff33;
+      border: none;
+      padding: 8px 12px;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .command-list button:hover {
+      background: #333;
+    }
+
+    .tutorial-popup {
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border: 2px solid #000;
+      padding: 20px;
+      width: 400px;
+      display: none;
+      z-index: 100;
+    }
+
+    .tutorial-popup pre {
+      background: #eee;
+      padding: 10px;
+      overflow-x: auto;
+    }
+
+    .tutorial-popup button {
+      margin-top: 10px;
+      float: right;
     }
   </style>
 </head>
@@ -122,17 +178,29 @@
       <div class="window-button minimize"></div>
       <div class="window-button maximize"></div>
     </div>
-    <div class="title-text">Terminal</div>
+    <div class="title-text">EthOS Terminal</div>
     <div></div>
   </div>
   <div class="terminal-content" id="terminal-output">
-    <div>Welcome to EthOS Terminal!</div>
+    <div>Welcome to EthOS Node Terminal!</div>
     <div class="input-line">
       <span>&gt;</span>
       <input type="text" id="terminal-input" autofocus>
     </div>
   </div>
-  <div class="footer-bar">EthOS Terminal v1.0</div>
+  <div class="footer-bar">Simulated Hardhat Node</div>
+</div>
+
+<div class="command-list">
+  <h3>Command List</h3>
+  <button onclick="showTutorial('npx hardhat node')">npx hardhat node</button>
+  <button onclick="showTutorial('npx hardhat compile')">npx hardhat compile</button>
+  <button onclick="showTutorial('npx hardhat run scripts/deploy.js')">deploy.js</button>
+</div>
+
+<div class="tutorial-popup" id="tutorial-popup">
+  <div id="tutorial-content"></div>
+  <button onclick="document.getElementById('tutorial-popup').style.display='none'">Close</button>
 </div>
 
 <script>
@@ -141,7 +209,53 @@
   const input = document.getElementById("terminal-input");
   const output = document.getElementById("terminal-output");
 
-  // Drag to move
+  // Simulated command output
+  const commandOutputs = {
+    "npx hardhat node": `
+Compiling...
+Hardhat Node started on http://127.0.0.1:8545
+
+Accounts:
+0x1a2b3c...  10000 ETH
+0x4d5e6f...  10000 ETH
+
+Listening for JSON-RPC requests...
+    `,
+    "npx hardhat compile": `
+Compiling 10 files...
+Compiled successfully in 2.45s
+Artifacts saved to ./artifacts
+    `,
+    "npx hardhat run scripts/deploy.js": `
+Running deploy script...
+Deployed contract at: 0xAbCdEf1234567890
+Gas used: 1,234,567
+Script completed.
+    `,
+    "clear": ""
+  };
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      const command = input.value.trim();
+      const cmdLine = document.createElement("div");
+      cmdLine.textContent = "> " + command;
+      output.insertBefore(cmdLine, input.parentNode);
+
+      const result = document.createElement("div");
+      result.textContent = "Executing...";
+      output.insertBefore(result, input.parentNode);
+
+      setTimeout(() => {
+        result.textContent = commandOutputs[command] || `Command not found: ${command}`;
+        output.scrollTop = output.scrollHeight;
+      }, 700);
+
+      input.value = "";
+    }
+  });
+
+  // Drag
   let isDragging = false, offsetX, offsetY;
 
   dragBar.addEventListener("mousedown", (e) => {
@@ -164,23 +278,32 @@
     document.body.style.userSelect = "auto";
   });
 
-  // Command input
-  input.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      const command = input.value.trim();
-      if (command) {
-        const cmdLine = document.createElement("div");
-        cmdLine.textContent = "> " + command;
-        output.insertBefore(cmdLine, input.parentNode);
+  // Tutorial Popup
+  function showTutorial(command) {
+    const popup = document.getElementById("tutorial-popup");
+    const content = document.getElementById("tutorial-content");
 
-        const result = document.createElement("div");
-        result.textContent = "You typed: " + command;
-        output.insertBefore(result, input.parentNode);
-      }
-      input.value = "";
-      output.scrollTop = output.scrollHeight;
-    }
-  });
+    const tutorials = {
+      "npx hardhat node": `
+<h3>Start Local Node</h3>
+<pre>npx hardhat node</pre>
+<p>This command starts a local Ethereum node for development and testing.</p>
+      `,
+      "npx hardhat compile": `
+<h3>Compile Contracts</h3>
+<pre>npx hardhat compile</pre>
+<p>This command compiles all Solidity contracts and saves artifacts.</p>
+      `,
+      "npx hardhat run scripts/deploy.js": `
+<h3>Deploy Script</h3>
+<pre>npx hardhat run scripts/deploy.js</pre>
+<p>Executes a deployment script to deploy your contract to the local node.</p>
+      `
+    };
+
+    content.innerHTML = tutorials[command] || `<p>No tutorial found for this command.</p>`;
+    popup.style.display = "block";
+  }
 </script>
 
 </body>
