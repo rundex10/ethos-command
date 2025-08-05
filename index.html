@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Retro Terminal</title>
+  <title>macOS Terminal Popup</title>
   <style>
     body {
       margin: 0;
-      background-color: #a4c4f4;
-      font-family: 'Courier New', monospace;
+      background-color: #c7d4e2;
+      font-family: 'SF Mono', 'Courier New', monospace;
     }
 
     .terminal-window {
@@ -15,28 +15,70 @@
       top: 100px;
       left: 100px;
       width: 600px;
-      background-color: #d0d0d0;
-      border: 2px solid #000;
-      box-shadow: 5px 5px 0px #444;
-      z-index: 10;
+      min-width: 300px;
+      min-height: 200px;
+      background-color: #e5e5e5;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      overflow: hidden;
+      border: 1px solid #999;
+      display: flex;
+      flex-direction: column;
+      resize: both;
     }
 
     .title-bar {
-      background-color: #000080;
-      color: #fff;
-      padding: 5px 10px;
+      background-color: #f5f5f7;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      padding-left: 12px;
+      padding-right: 12px;
+      gap: 8px;
+      border-bottom: 1px solid #ccc;
       cursor: move;
       user-select: none;
+      justify-content: space-between;
+    }
+
+    .window-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .window-button {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .close {
+      background-color: #ff5f57;
+    }
+
+    .minimize {
+      background-color: #ffbd2e;
+    }
+
+    .maximize {
+      background-color: #28c940;
+    }
+
+    .title-text {
+      font-size: 12px;
+      color: #333;
       font-weight: bold;
     }
 
     .terminal-content {
       padding: 10px;
-      background-color: #000;
-      color: #0f0;
-      height: 300px;
+      background-color: #1e1e1e;
+      color: #33ff33;
+      height: 100%;
       overflow-y: auto;
+      font-size: 14px;
       white-space: pre-wrap;
+      flex-grow: 1;
     }
 
     .input-line {
@@ -44,7 +86,7 @@
     }
 
     .input-line span {
-      color: #0f0;
+      color: #33ff33;
       margin-right: 5px;
     }
 
@@ -52,17 +94,37 @@
       flex: 1;
       background: transparent;
       border: none;
-      color: #0f0;
+      color: #33ff33;
       font-family: inherit;
       font-size: 1em;
       outline: none;
+    }
+
+    .footer-bar {
+      background-color: #f5f5f7;
+      border-top: 1px solid #ccc;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #555;
+      border-radius: 0 0 10px 10px;
     }
   </style>
 </head>
 <body>
 
 <div class="terminal-window" id="terminal">
-  <div class="title-bar">Retro Terminal</div>
+  <div class="title-bar" id="drag-bar">
+    <div class="window-buttons">
+      <div class="window-button close"></div>
+      <div class="window-button minimize"></div>
+      <div class="window-button maximize"></div>
+    </div>
+    <div class="title-text">Terminal</div>
+    <div></div>
+  </div>
   <div class="terminal-content" id="terminal-output">
     <div>Welcome to EthOS Terminal!</div>
     <div class="input-line">
@@ -70,21 +132,24 @@
       <input type="text" id="terminal-input" autofocus>
     </div>
   </div>
+  <div class="footer-bar">EthOS Terminal v1.0</div>
 </div>
 
 <script>
   const terminal = document.getElementById("terminal");
-  const titleBar = terminal.querySelector(".title-bar");
+  const dragBar = document.getElementById("drag-bar");
   const input = document.getElementById("terminal-input");
   const output = document.getElementById("terminal-output");
 
-  // Make the terminal draggable
+  // Drag to move
   let isDragging = false, offsetX, offsetY;
 
-  titleBar.addEventListener("mousedown", (e) => {
+  dragBar.addEventListener("mousedown", (e) => {
+    if (e.target.classList.contains("window-button")) return;
     isDragging = true;
     offsetX = e.clientX - terminal.offsetLeft;
     offsetY = e.clientY - terminal.offsetTop;
+    document.body.style.userSelect = "none";
   });
 
   document.addEventListener("mousemove", (e) => {
@@ -94,9 +159,12 @@
     }
   });
 
-  document.addEventListener("mouseup", () => isDragging = false);
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+    document.body.style.userSelect = "auto";
+  });
 
-  // Handle command input
+  // Command input
   input.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
       const command = input.value.trim();
@@ -104,7 +172,7 @@
         const cmdLine = document.createElement("div");
         cmdLine.textContent = "> " + command;
         output.insertBefore(cmdLine, input.parentNode);
-        // You can define custom commands here
+
         const result = document.createElement("div");
         result.textContent = "You typed: " + command;
         output.insertBefore(result, input.parentNode);
