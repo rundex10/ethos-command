@@ -2,33 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>EthOS Node Terminal</title>
+  <title>EthOS Node Terminal Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
       background-color: #c7d4e2;
-      font-family: 'SF Mono', 'Courier New', monospace;
+      font-family: 'Fira Code', monospace;
       height: 100vh;
       overflow: hidden;
     }
 
-    /* Terminal */
-    .terminal-window {
+    .terminal-window, .guide-popup {
       position: absolute;
-      top: 60px;
-      left: 60px;
-      width: 600px;
-      min-width: 300px;
-      min-height: 200px;
       background-color: #e5e5e5;
       border-radius: 10px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-      overflow: hidden;
       border: 1px solid #999;
       display: flex;
       flex-direction: column;
       resize: both;
+      overflow: hidden;
       z-index: 10;
+    }
+
+    .terminal-window {
+      top: 60px;
+      left: 60px;
+      width: 700px;
+      min-height: 250px;
+    }
+
+    .guide-popup {
+      top: 80px;
+      left: 80px;
+      width: 500px;
+      display: none;
+      z-index: 20;
     }
 
     .title-bar {
@@ -36,9 +48,7 @@
       height: 28px;
       display: flex;
       align-items: center;
-      padding-left: 12px;
-      padding-right: 12px;
-      gap: 8px;
+      padding: 0 12px;
       border-bottom: 1px solid #ccc;
       cursor: move;
       user-select: none;
@@ -60,12 +70,6 @@
     .minimize { background-color: #ffbd2e; }
     .maximize { background-color: #28c940; }
 
-    .title-text {
-      font-size: 12px;
-      color: #333;
-      font-weight: bold;
-    }
-
     .terminal-content {
       padding: 10px;
       background-color: #1e1e1e;
@@ -82,7 +86,6 @@
     }
 
     .input-line span {
-      color: #33ff33;
       margin-right: 5px;
     }
 
@@ -105,10 +108,8 @@
       justify-content: center;
       font-size: 12px;
       color: #555;
-      border-radius: 0 0 10px 10px;
     }
 
-    /* Sidebar Button */
     .see-guide {
       position: absolute;
       top: 60px;
@@ -117,45 +118,12 @@
       color: #33ff33;
       border: none;
       padding: 12px 20px;
-      font-family: 'Courier New', monospace;
+      font-family: 'Fira Code', monospace;
       font-size: 14px;
       border-radius: 8px;
       cursor: pointer;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
       z-index: 11;
-    }
-
-    .see-guide:hover {
-      background: #333;
-    }
-
-    /* Guide Popup */
-    .guide-popup {
-      position: absolute;
-      top: 120px;
-      left: 120px;
-      width: 500px;
-      background: #f5f5f7;
-      border: 1px solid #999;
-      border-radius: 10px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-      z-index: 20;
-      display: none;
-      flex-direction: column;
-      resize: both;
-      overflow: hidden;
-    }
-
-    .guide-title {
-      background-color: #f5f5f7;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 12px;
-      border-bottom: 1px solid #ccc;
-      cursor: move;
-      user-select: none;
     }
 
     .guide-content {
@@ -169,32 +137,27 @@
 
     .guide-content code {
       background: #eee;
-      display: block;
-      padding: 8px;
-      margin-bottom: 8px;
+      padding: 4px 8px;
+      display: inline-block;
+      margin-right: 10px;
     }
 
     .copy-btn {
-      background: #1e1e1e;
-      color: #33ff33;
+      background: none;
       border: none;
-      padding: 6px 10px;
-      font-family: monospace;
-      font-size: 12px;
+      font-size: 14px;
       cursor: pointer;
-      float: right;
-      margin-top: 5px;
-      border-radius: 4px;
+      color: #333;
+      vertical-align: middle;
     }
 
     .copy-btn:hover {
-      background: #333;
+      color: #000;
     }
   </style>
 </head>
 <body>
 
-<!-- Terminal -->
 <div class="terminal-window" id="terminal">
   <div class="title-bar" id="drag-bar">
     <div class="window-buttons">
@@ -202,132 +165,90 @@
       <div class="window-button minimize"></div>
       <div class="window-button maximize"></div>
     </div>
-    <div class="title-text">EthOS Terminal</div>
-    <div></div>
+    <div><strong>EthOS Terminal</strong></div>
   </div>
   <div class="terminal-content" id="terminal-output">
-    <div>Welcome to EthOS Node Terminal!</div>
+    <div>Welcome to EthOS Terminal Simulator</div>
     <div class="input-line">
       <span>&gt;</span>
       <input type="text" id="terminal-input" autofocus>
     </div>
   </div>
-  <div class="footer-bar">Simulated Hardhat Node</div>
+  <div class="footer-bar">Hardhat Dev Environment</div>
 </div>
 
-<!-- See Guide Button -->
 <button class="see-guide" onclick="openGuide()">📘 See Guide</button>
 
-<!-- Guide Popup -->
 <div class="guide-popup" id="guide">
-  <div class="guide-title" id="guide-drag">
+  <div class="title-bar" id="guide-drag">
     <span><strong>EthOS Node Setup Guide</strong></span>
-    <button onclick="closeGuide()">✖</button>
+    <button onclick="guide.style.display='none'">✖</button>
   </div>
   <div class="guide-content">
-    <p>🔧 <strong>Step-by-step:</strong></p>
     <ol>
-      <li>Install dependencies:</li>
-      <code id="code1">npm install --save-dev hardhat</code>
-      <button class="copy-btn" onclick="copy('code1')">Copy</button>
-
-      <li>Start a local Hardhat node:</li>
-      <code id="code2">npx hardhat node</code>
-      <button class="copy-btn" onclick="copy('code2')">Copy</button>
-
-      <li>Compile contracts:</li>
-      <code id="code3">npx hardhat compile</code>
-      <button class="copy-btn" onclick="copy('code3')">Copy</button>
-
-      <li>Deploy contract to local node:</li>
-      <code id="code4">npx hardhat run scripts/deploy.js --network localhost</code>
-      <button class="copy-btn" onclick="copy('code4')">Copy</button>
+      <li>Clone the EthOS repository:<br>
+        <code id="c1">git clone https://github.com/ethos-node/ethos</code><button class="copy-btn" onclick="copy('c1')">📋</button>
+      </li>
+      <li>Navigate to the folder:<br>
+        <code id="c2">cd ethos</code><button class="copy-btn" onclick="copy('c2')">📋</button>
+      </li>
+      <li>Install dependencies:<br>
+        <code id="c3">npm install</code><button class="copy-btn" onclick="copy('c3')">📋</button>
+      </li>
+      <li>Copy .env config:<br>
+        <code id="c4">cp .env.example .env</code><button class="copy-btn" onclick="copy('c4')">📋</button>
+      </li>
+      <li>Compile contracts:<br>
+        <code id="c5">npx hardhat compile</code><button class="copy-btn" onclick="copy('c5')">📋</button>
+      </li>
+      <li>Run local node:<br>
+        <code id="c6">npx hardhat node</code><button class="copy-btn" onclick="copy('c6')">📋</button>
+      </li>
+      <li>Deploy contract:<br>
+        <code id="c7">npx hardhat run scripts/deploy.js --network localhost</code><button class="copy-btn" onclick="copy('c7')">📋</button>
+      </li>
     </ol>
   </div>
 </div>
 
 <script>
-  const terminal = document.getElementById("terminal");
-  const dragBar = document.getElementById("drag-bar");
   const input = document.getElementById("terminal-input");
   const output = document.getElementById("terminal-output");
 
-  // Drag Terminal
-  let isDragging = false, offsetX, offsetY;
-  dragBar.addEventListener("mousedown", (e) => {
-    isDragging = true;
-    offsetX = e.clientX - terminal.offsetLeft;
-    offsetY = e.clientY - terminal.offsetTop;
-    document.body.style.userSelect = "none";
-  });
+  const terminalResponses = {
+    "git clone https://github.com/ethos-node/ethos": "Cloning into 'ethos'...\nremote: Enumerating objects... done.\nResolving deltas... done.",
+    "cd ethos": "You are now in the 'ethos' directory.",
+    "npm install": "Installing dependencies...\n✔ all packages installed",
+    "cp .env.example .env": ".env file created.",
+    "npx hardhat compile": "Compiling 12 files...\n✔ Compilation finished in 2.3s",
+    "npx hardhat node": "Starting Hardhat Network...\nListening on http://127.0.0.1:8545",
+    "npx hardhat run scripts/deploy.js --network localhost": "Deploying contracts...\n✔ Contract deployed to 0xAbC123..."
+  };
 
-  document.addEventListener("mousemove", (e) => {
-    if (isDragging) {
-      terminal.style.left = `${e.clientX - offsetX}px`;
-      terminal.style.top = `${e.clientY - offsetY}px`;
-    }
-  });
-  document.addEventListener("mouseup", () => {
-    isDragging = false;
-    document.body.style.userSelect = "auto";
-  });
-
-  // Terminal Command
-  input.addEventListener("keydown", function (e) {
+  input.addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
-      const command = input.value.trim();
+      const cmd = input.value.trim();
       const cmdLine = document.createElement("div");
-      cmdLine.textContent = "> " + command;
+      cmdLine.textContent = "> " + cmd;
       output.insertBefore(cmdLine, input.parentNode);
 
-      const result = document.createElement("div");
-      result.textContent = "Executing...";
-      output.insertBefore(result, input.parentNode);
-
-      setTimeout(() => {
-        result.textContent = `Finished: ${command}`;
-        output.scrollTop = output.scrollHeight;
-      }, 1000);
+      const res = document.createElement("div");
+      res.textContent = terminalResponses[cmd] || "Command not recognized.";
+      output.insertBefore(res, input.parentNode);
 
       input.value = "";
+      output.scrollTop = output.scrollHeight;
     }
   });
 
-  // Guide Popup
   const guide = document.getElementById("guide");
   function openGuide() {
     guide.style.display = "flex";
   }
-  function closeGuide() {
-    guide.style.display = "none";
-  }
 
-  // Drag Guide
-  const guideDrag = document.getElementById("guide-drag");
-  let draggingGuide = false, guideOffsetX, guideOffsetY;
-  guideDrag.addEventListener("mousedown", (e) => {
-    draggingGuide = true;
-    guideOffsetX = e.clientX - guide.offsetLeft;
-    guideOffsetY = e.clientY - guide.offsetTop;
-    document.body.style.userSelect = "none";
-  });
-  document.addEventListener("mousemove", (e) => {
-    if (draggingGuide) {
-      guide.style.left = `${e.clientX - guideOffsetX}px`;
-      guide.style.top = `${e.clientY - guideOffsetY}px`;
-    }
-  });
-  document.addEventListener("mouseup", () => {
-    draggingGuide = false;
-    document.body.style.userSelect = "auto";
-  });
-
-  // Copy Command
   function copy(id) {
     const text = document.getElementById(id).textContent;
-    navigator.clipboard.writeText(text).then(() => {
-      alert('Copied: ' + text);
-    });
+    navigator.clipboard.writeText(text).then(() => alert("Copied: " + text));
   }
 </script>
 
